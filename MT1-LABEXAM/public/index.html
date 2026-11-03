@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Library Catalogue</title>
+  <link rel="icon" href="data:,">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ground: #eef1f4;
+      --paper: #ffffff;
+      --ink: #12161c;
+      --muted: #566070;
+      --line: #d3d9e0;
+      --stamp: #2447f5;
+      --stamp-soft: #e3e9ff;
+      --ok: #0b6e49;
+      --ok-soft: #dff3ea;
+      --out: #b5321a;
+      --out-soft: #fbe5df;
+      --font: 'Bricolage Grotesque', system-ui, -apple-system, 'Segoe UI', sans-serif;
+      --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--ground);
+      color: var(--ink);
+      font-family: var(--font);
+      font-size: 16px;
+      line-height: 1.5;
+    }
+
+    button, input, select { font: inherit; color: inherit; }
+    button { cursor: pointer; }
+
+    :focus-visible { outline: 3px solid var(--stamp); outline-offset: 2px; }
+
+    .page { max-width: 980px; margin: 0 auto; padding: 40px 20px 80px; }
+
+    /* ---------- Hero: the search is the first thing you meet ---------- */
+    .hero h1 {
+      margin: 0 0 20px;
+      font-size: clamp(2.4rem, 7vw, 4.4rem);
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: -0.035em;
+      font-variation-settings: 'opsz' 96;
+    }
+
+    .search-box { position: relative; }
+
+    .search-box input {
+      width: 100%;
+      height: 68px;
+      padding: 0 56px 0 22px;
+      border: 2px solid var(--ink);
+      border-radius: 10px;
+      background: var(--paper);
+      font-size: 1.3rem;
+      font-weight: 600;
+    }
+
+    .search-box input::-webkit-search-cancel-button { -webkit-appearance: none; display: none; }
+
+    .search-box input::placeholder { color: #8b94a3; font-weight: 400; }
+
+    .clear-search {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 40px;
+      height: 40px;
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      font-size: 1.4rem;
+      color: var(--muted);
+    }
+
+    .clear-search[hidden] { display: none; }
+    .clear-search:hover { background: var(--ground); }
+
+    /* ---------- Controls ---------- */
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px 24px;
+      align-items: center;
+      margin: 20px 0 8px;
+    }
+
+    .group { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+    .group-label { margin-right: 4px; color: var(--muted); font-size: 0.9rem; }
+
+    .pill {
+      border: 1.5px solid var(--line);
+      background: var(--paper);
+      border-radius: 999px;
+      padding: 6px 14px;
+      font-size: 0.95rem;
+    }
+
+    .pill:hover { border-color: var(--ink); }
+    .pill[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: #fff; }
+
+    .segmented { display: inline-flex; border: 1.5px solid var(--ink); border-radius: 8px; overflow: hidden; background: var(--paper); }
+    .segmented button { border: 0; background: transparent; padding: 8px 16px; font-weight: 600; }
+    .segmented button + button { border-left: 1.5px solid var(--ink); }
+    .segmented button[aria-pressed="true"] { background: var(--stamp); color: #fff; }
+    .segmented button:focus-visible { outline-offset: -3px; }
+
+    /* ---------- Request strip: shows the real API call ---------- */
+    .request {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 14px;
+      align-items: center;
+      margin: 18px 0 26px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      background: var(--ink);
+      color: #d8dee9;
+      font-family: var(--mono);
+      font-size: 0.85rem;
+    }
+
+    .request .method { color: #8fb0ff; font-weight: 700; }
+    .request .url { color: #fff; word-break: break-all; flex: 1 1 260px; }
+    .request .status-ok { color: #6fe0ac; }
+    .request .status-bad { color: #ff9a86; }
+
+    /* ---------- Summary line ---------- */
+    .summary {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .summary p { margin: 0; color: var(--muted); }
+    .summary strong { color: var(--ink); }
+
+    .primary {
+      border: 0;
+      border-radius: 8px;
+      background: var(--stamp);
+      color: #fff;
+      font-weight: 600;
+      padding: 10px 18px;
+    }
+
+    .primary:hover { background: #1a37cc; }
+
+    /* ---------- Catalogue rows ---------- */
+    .list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+
+    .book {
+      display: grid;
+      grid-template-columns: 8px minmax(0, 1fr) 120px 70px 130px auto;
+      gap: 0 18px;
+      align-items: center;
+      padding: 14px 16px 14px 0;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .spine { align-self: stretch; background: var(--spine, var(--ink)); }
+    .book-main { min-width: 0; padding-left: 4px; }
+    .book-title { margin: 0; font-size: 1.15rem; font-weight: 600; line-height: 1.25; }
+    .book-author { margin: 2px 0 0; color: var(--muted); }
+    .book-category { color: var(--muted); font-size: 0.95rem; }
+    .book-price { font-weight: 600; font-variant-numeric: tabular-nums; }
+
+    mark { background: #ffe58a; color: inherit; border-radius: 2px; padding: 0 1px; }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      width: fit-content;
+      padding: 4px 12px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .status::before { content: ''; width: 9px; height: 9px; border-radius: 50%; background: currentColor; }
+    .status.on-shelf { background: var(--ok-soft); color: var(--ok); }
+    .status.issued { background: var(--out-soft); color: var(--out); }
+
+    .actions { display: flex; gap: 6px; justify-content: flex-end; }
+
+    .action {
+      border: 1.5px solid var(--ink);
+      background: var(--paper);
+      border-radius: 8px;
+      padding: 6px 14px;
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .action:hover { background: var(--ink); color: #fff; }
+    .action.danger { border-color: var(--line); color: var(--out); }
+    .action.danger:hover { background: var(--out); border-color: var(--out); color: #fff; }
+
+    /* ---------- Empty / error states ---------- */
+    .notice {
+      padding: 36px 24px;
+      background: var(--paper);
+      border: 1.5px dashed #a9b2bf;
+      border-radius: 10px;
+    }
+
+    .notice h2 { margin: 0 0 6px; font-size: 1.3rem; }
+    .notice p { margin: 0 0 16px; color: var(--muted); max-width: 52ch; }
+    .notice code { font-family: var(--mono); background: var(--ground); padding: 2px 6px; border-radius: 4px; }
+
+    /* ---------- Dialog ---------- */
+    dialog {
+      width: min(440px, calc(100vw - 32px));
+      border: 0;
+      border-radius: 12px;
+      padding: 26px;
+      background: var(--paper);
+      color: var(--ink);
+    }
+
+    dialog::backdrop { background: rgba(18, 22, 28, 0.55); }
+    dialog h2 { margin: 0 0 16px; font-size: 1.4rem; }
+    dialog label { display: block; margin-bottom: 14px; font-weight: 600; font-size: 0.95rem; }
+
+    dialog input {
+      display: block;
+      width: 100%;
+      margin-top: 4px;
+      height: 44px;
+      padding: 0 12px;
+      border: 1.5px solid var(--line);
+      border-radius: 8px;
+      font-weight: 400;
+    }
+
+    dialog input:focus-visible { border-color: var(--stamp); outline-offset: 0; }
+    .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
+    .form-error { color: var(--out); margin: 0 0 12px; min-height: 1.4em; }
+
+    /* ---------- Toast ---------- */
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 24px;
+      transform: translate(-50%, 0);
+      background: var(--ink);
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25);
+      transition: transform 0.2s ease, opacity 0.2s ease;
+    }
+
+    .toast[hidden] { display: block; opacity: 0; transform: translate(-50%, 16px); pointer-events: none; }
+
+    /* ---------- Small screens ---------- */
+    @media (max-width: 760px) {
+      .book {
+        grid-template-columns: 8px 1fr auto;
+        grid-template-areas:
+          "spine main main"
+          "spine meta meta"
+          "spine status status"
+          "spine actions actions";
+        gap: 8px 12px;
+        padding: 14px 14px 14px 0;
+      }
+      .spine { grid-area: spine; }
+      .book-main { grid-area: main; }
+      .book-category { grid-area: meta; }
+      .book-price { grid-area: meta; justify-self: end; }
+      .status { grid-area: status; }
+      .actions { grid-area: actions; justify-content: flex-start; }
+      .search-box input { height: 60px; font-size: 1.1rem; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .toast { transition: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="hero">
+      <h1>Is it on the shelf?</h1>
+      <div class="search-box">
+        <input id="search" type="search" autocomplete="off" placeholder="Search by title, author or category" aria-label="Search books">
+        <button id="clear-search" class="clear-search" type="button" aria-label="Clear search" hidden>&times;</button>
+      </div>
+    </header>
+
+    <section class="controls" aria-label="Filters">
+      <div class="group">
+        <span class="group-label">Availability</span>
+        <div class="segmented" id="availability">
+          <button type="button" data-value="all" aria-pressed="true">All</button>
+          <button type="button" data-value="true" aria-pressed="false">On the shelf</button>
+          <button type="button" data-value="false" aria-pressed="false">Issued</button>
+        </div>
+      </div>
+      <div class="group" id="categories" aria-label="Category"></div>
+      <div class="group">
+        <span class="group-label">Server</span>
+        <div class="segmented" id="server">
+          <button type="button" data-value="http" aria-pressed="true">HTTP :3000</button>
+          <button type="button" data-value="express" aria-pressed="false">Express :4000</button>
+        </div>
+      </div>
+    </section>
+
+    <div class="request" id="request" aria-live="polite">
+      <span class="method">GET</span>
+      <span class="url">Waiting for the first request</span>
+    </div>
+
+    <div class="summary">
+      <p id="summary" aria-live="polite"></p>
+      <button id="add-book" class="primary" type="button">Add a book</button>
+    </div>
+
+    <ul class="list" id="list"></ul>
+    <div id="notice"></div>
+  </div>
+
+  <dialog id="dialog">
+    <form id="form" method="dialog">
+      <h2>Add a book</h2>
+      <label>Title<input name="title" required autocomplete="off"></label>
+      <label>Author<input name="author" required autocomplete="off"></label>
+      <label>Price (INR)<input name="price" type="number" min="0" step="1" required></label>
+      <label>Category<input name="category" list="category-options" required autocomplete="off"></label>
+      <datalist id="category-options"></datalist>
+      <p class="form-error" id="form-error" role="alert"></p>
+      <div class="dialog-actions">
+        <button type="button" class="action" id="cancel">Cancel</button>
+        <button type="submit" class="primary">Add book</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" hidden></div>
+
+  <script>
+    const SERVERS = {
+      http: { base: 'http://localhost:3000', port: 3000, start: 'node httpServer.js', createPath: '/add-book', canDelete: false },
+      express: { base: 'http://localhost:4000', port: 4000, start: 'node expressApp.js', createPath: '/books', canDelete: true }
+    };
+
+    const state = { server: 'http', search: '', availability: 'all', category: 'all', allBooks: [], books: [], failed: false };
+    let requestCounter = 0;
+    let searchTimer;
+
+    const $ = (id) => document.getElementById(id);
+    const els = {
+      search: $('search'), clear: $('clear-search'), list: $('list'), notice: $('notice'),
+      summary: $('summary'), categories: $('categories'), request: $('request'),
+      dialog: $('dialog'), form: $('form'), formError: $('form-error'), toast: $('toast'),
+      categoryOptions: $('category-options')
+    };
+
+    const escapeHtml = (text) =>
+      String(text).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+    const highlight = (text) => {
+      const safe = escapeHtml(text);
+      const term = state.search.trim();
+      if (!term) return safe;
+      const pattern = escapeHtml(term).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      return safe.replace(new RegExp(`(${pattern})`, 'ig'), '<mark>$1</mark>');
+    };
+
+    const spineColor = (category) => {
+      let hash = 0;
+      for (const char of category) hash = (hash * 31 + char.charCodeAt(0)) % 360;
+      return `hsl(${hash} 52% 38%)`;
+    };
+
+    // One place for every API call; it also fills the request strip.
+    async function api(method, path, body, { silent = false } = {}) {
+      const server = SERVERS[state.server];
+      const started = performance.now();
+      let response;
+      try {
+        response = await fetch(server.base + path, {
+          method,
+          headers: body ? { 'Content-Type': 'application/json' } : undefined,
+          body: body ? JSON.stringify(body) : undefined
+        });
+      } catch (error) {
+        if (!silent) showRequest(method, server.base + path, 'no response', false);
+        throw error;
+      }
+      const data = await response.json().catch(() => null);
+      if (!silent) showRequest(method, server.base + path, `${response.status} in ${Math.round(performance.now() - started)} ms`, response.ok);
+      return { ok: response.ok, status: response.status, data };
+    }
+
+    function showRequest(method, url, result, ok) {
+      els.request.innerHTML =
+        `<span class="method">${method}</span><span class="url">${escapeHtml(url)}</span>` +
+        `<span class="${ok ? 'status-ok' : 'status-bad'}">${escapeHtml(result)}</span>`;
+    }
+
+    function buildQuery() {
+      const params = new URLSearchParams();
+      if (state.search.trim()) params.set('search', state.search.trim());
+      if (state.availability !== 'all') params.set('available', state.availability);
+      if (state.category !== 'all') params.set('category', state.category);
+      const query = params.toString();
+      return query ? `?${query}` : '';
+    }
+
+    async function load() {
+      const ticket = ++requestCounter;
+      const query = buildQuery();
+      try {
+        if (query) {
+          const all = await api('GET', '/books', null, { silent: true });
+          if (ticket !== requestCounter) return;
+          state.allBooks = all.data || [];
+        }
+        const result = await api('GET', '/books' + query);
+        if (ticket !== requestCounter) return;
+        state.books = result.data || [];
+        if (!query) state.allBooks = state.books;
+        state.failed = false;
+      } catch (error) {
+        if (ticket !== requestCounter) return;
+        state.failed = true;
+      }
+      render();
+    }
+
+    function render() {
+      renderCategories();
+      renderSummary();
+      renderList();
+    }
+
+    function renderCategories() {
+      const names = [...new Set(state.allBooks.map((b) => b.category))].sort();
+      if (state.category !== 'all' && !names.includes(state.category)) state.category = 'all';
+      const buttons = ['all', ...names].map((name) => {
+        const label = name === 'all' ? 'All categories' : name;
+        return `<button type="button" class="pill" data-value="${escapeHtml(name)}" aria-pressed="${state.category === name}">${escapeHtml(label)}</button>`;
+      });
+      els.categories.innerHTML = buttons.join('');
+      els.categoryOptions.innerHTML = names.map((name) => `<option value="${escapeHtml(name)}">`).join('');
+    }
+
+    function renderSummary() {
+      if (state.failed) { els.summary.textContent = ''; return; }
+      const onShelf = state.books.filter((b) => b.available).length;
+      els.summary.innerHTML =
+        `<strong>${state.books.length}</strong> of ${state.allBooks.length} books shown, ` +
+        `<strong>${onShelf}</strong> on the shelf`;
+    }
+
+    function renderList() {
+      els.notice.innerHTML = '';
+      if (state.failed) {
+        const server = SERVERS[state.server];
+        els.list.innerHTML = '';
+        els.notice.innerHTML =
+          `<div class="notice"><h2>Can't reach the server on port ${server.port}</h2>` +
+          `<p>Start it in a terminal with <code>${server.start}</code>, then try again.</p>` +
+          `<button class="primary" type="button" id="retry">Try again</button></div>`;
+        $('retry').addEventListener('click', load);
+        return;
+      }
+
+      if (state.books.length === 0) {
+        els.list.innerHTML = '';
+        const term = state.search.trim();
+        const what = term ? `No books match "${escapeHtml(term)}".` : 'No books match these filters.';
+        els.notice.innerHTML =
+          `<div class="notice"><h2>${what}</h2>` +
+          `<p>Check the spelling, search by author instead, or clear the filters to see the full catalogue.</p>` +
+          `<button class="primary" type="button" id="reset">Clear search and filters</button></div>`;
+        $('reset').addEventListener('click', resetFilters);
+        return;
+      }
+
+      const server = SERVERS[state.server];
+      els.list.innerHTML = state.books.map((book) => `
+        <li class="book" data-id="${book.id}">
+          <span class="spine" style="--spine: ${spineColor(book.category)}"></span>
+          <div class="book-main">
+            <h3 class="book-title">${highlight(book.title)}</h3>
+            <p class="book-author">${highlight(book.author)}</p>
+          </div>
+          <span class="book-category">${highlight(book.category)}</span>
+          <span class="book-price">&#8377;${escapeHtml(book.price)}</span>
+          <span class="status ${book.available ? 'on-shelf' : 'issued'}">${book.available ? 'On the shelf' : 'Issued'}</span>
+          <div class="actions">
+            <button class="action" type="button" data-action="toggle">${book.available ? 'Issue' : 'Return'}</button>
+            ${server.canDelete ? '<button class="action danger" type="button" data-action="delete">Delete</button>' : ''}
+          </div>
+        </li>`).join('');
+    }
+
+    function resetFilters() {
+      state.search = '';
+      state.availability = 'all';
+      state.category = 'all';
+      els.search.value = '';
+      els.clear.hidden = true;
+      syncPressed($('availability'), 'all');
+      load();
+    }
+
+    function syncPressed(group, value) {
+      group.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.value === value)));
+    }
+
+    let toastTimer;
+    function toast(message) {
+      els.toast.textContent = message;
+      els.toast.hidden = false;
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => { els.toast.hidden = true; }, 2600);
+    }
+
+    // ---------- Events ----------
+    els.search.addEventListener('input', () => {
+      els.clear.hidden = !els.search.value;
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => { state.search = els.search.value; load(); }, 200);
+    });
+
+    els.clear.addEventListener('click', () => {
+      els.search.value = '';
+      els.clear.hidden = true;
+      state.search = '';
+      els.search.focus();
+      load();
+    });
+
+    $('availability').addEventListener('click', (event) => {
+      const button = event.target.closest('button');
+      if (!button) return;
+      state.availability = button.dataset.value;
+      syncPressed($('availability'), state.availability);
+      load();
+    });
+
+    $('server').addEventListener('click', (event) => {
+      const button = event.target.closest('button');
+      if (!button || button.dataset.value === state.server) return;
+      state.server = button.dataset.value;
+      syncPressed($('server'), state.server);
+      load();
+    });
+
+    els.categories.addEventListener('click', (event) => {
+      const button = event.target.closest('button');
+      if (!button) return;
+      state.category = button.dataset.value;
+      load();
+    });
+
+    els.list.addEventListener('click', async (event) => {
+      const button = event.target.closest('button[data-action]');
+      if (!button) return;
+      const id = Number(button.closest('.book').dataset.id);
+      const book = state.books.find((b) => b.id === id);
+      if (!book) return;
+
+      try {
+        if (button.dataset.action === 'toggle') {
+          const result = await api('PUT', `/books/${id}`, { available: !book.available });
+          if (!result.ok) return toast(result.data?.error || 'Could not update the book');
+          toast(book.available ? `Issued "${book.title}"` : `Returned "${book.title}"`);
+        } else {
+          if (!window.confirm(`Delete "${book.title}" from the catalogue?`)) return;
+          const result = await api('DELETE', `/books/${id}`);
+          if (!result.ok) return toast(result.data?.error || 'Could not delete the book');
+          toast(`Deleted "${book.title}"`);
+        }
+        load();
+      } catch (error) {
+        toast('Server not reachable');
+      }
+    });
+
+    $('add-book').addEventListener('click', () => {
+      els.form.reset();
+      els.formError.textContent = '';
+      els.dialog.showModal();
+      els.form.elements.title.focus();
+    });
+
+    $('cancel').addEventListener('click', () => els.dialog.close());
+
+    els.form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const data = new FormData(els.form);
+      const nextId = state.allBooks.reduce((max, b) => Math.max(max, b.id), 0) + 1;
+      const book = {
+        id: nextId,
+        title: data.get('title').trim(),
+        author: data.get('author').trim(),
+        price: Number(data.get('price')),
+        category: data.get('category').trim()
+      };
+      try {
+        const result = await api('POST', SERVERS[state.server].createPath, book);
+        if (!result.ok) {
+          els.formError.textContent = result.data?.error || 'Could not add the book';
+          return;
+        }
+        els.dialog.close();
+        toast(`Added "${book.title}"`);
+        load();
+      } catch (error) {
+        els.formError.textContent = 'Server not reachable. Start it and try again.';
+      }
+    });
+
+    load();
+  </script>
+</body>
+</html>

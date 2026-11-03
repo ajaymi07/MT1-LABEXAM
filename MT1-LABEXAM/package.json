@@ -1,0 +1,14 @@
+{
+  "name": "mt1-labexam",
+  "version": "1.0.0",
+  "description": "Library Book Management Web Application - Node.js HTTP, FS and Express.js",
+  "type": "module",
+  "scripts": {
+    "http": "node httpServer.js",
+    "express": "node expressApp.js"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "express": "^5.3.0"
+  }
+}
